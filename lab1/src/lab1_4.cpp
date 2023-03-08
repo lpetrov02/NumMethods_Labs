@@ -12,8 +12,8 @@ float pairwise_sum_simd(float* x, int n) {
 
     int i = 0;
     #pragma omp simd
-    for (i = 0; i < n; i += 2) {
-        x[i / 2] = i < n - 1 ? x[i] + x[i + 1] : x[i];
+    for (i = 0; i < n / 2; i++) {
+        x[i] = x[i] + x[(n + 1) / 2 + i];
     }
     
     return pairwise_sum_simd(x, (n + 1) / 2);
