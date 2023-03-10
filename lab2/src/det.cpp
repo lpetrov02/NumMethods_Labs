@@ -37,9 +37,9 @@ float determinant(std::vector<std::vector<float>> A) {
 
 int main() {
     std::vector<std::vector<float>> A = { {1, 2, 3}, {4, 5, 6}, {7, 8, 9} };
-    std::vector<std::vector<float>> B = { {3, 4, 5, 6, 7}, {2, 1, 0, -2, 5}, {3, 4, 3, 2, 1}, {10, 1, -5, -6, 7}, {2, 8, 3, 5, 9} };
-    std::cout << "A: " << determinant(A) << std::endl;
-    std::cout << "B: " << determinant(B) << std::endl;
+    std::vector<std::vector<float>> B = { {3, 4, 5, -6, 7}, {2, 1, 0, -2, 5}, {3, 4, 3, 2, 1}, {10, 11, -5, -6, 7}, {2, 8, 3, 5, 9} };
+    std::cout << "A: " << determinant(A) << std::endl;  // expected 0
+    std::cout << "B: " << determinant(B) << std::endl;  // expected -12030
 
     return 0;
 }
