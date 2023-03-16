@@ -20,49 +20,6 @@ float abs(float a) {
 }
 
 
-// Result bisection(std::function<float(float)> f, int maxSteps = 10000, float eps1 = 0.001, float eps2 = 0.001) {
-//     // f = F' if we want to optimize F
-//     std::srand(time(NULL));
-//     float x1 = -10.0, x2 = 10.0;
-//     int maxSteps0 = 100;
-//     int stepsCnt = 0;
-//     while (f(x1) >= 0 && stepsCnt < maxSteps0) {
-//         x1 -= (float)(std::rand() % 1000) / 10;
-//         stepsCnt++;
-//     }
-//     while (f(x2) <= 0 && stepsCnt < maxSteps0) {
-//         x2 += (float)(std::rand() % 1000) / 10;
-//         stepsCnt++;
-//     }
-//     if (f(x1) * f(x2) >= 0) {
-//         return Result(0, 2, -1);
-//     }
-
-//     float dx = 0.0, dy = 0.0;
-//     stepsCnt = 0;
-//     do {
-//         float mid = (x1 + x2) / 2;
-//         if (f(x1) * f(mid) < 0) {
-//             dx = x2 - mid;
-//             dy = abs(f(x2) - f(mid));
-//             x2 = mid;
-//         }
-//         else {
-//             dx = mid - x1;
-//             dy = abs(f(x1) - f(mid));
-//             x1 = mid;
-//         }
-//         stepsCnt++;
-
-//     } while (stepsCnt < maxSteps && (dx > eps1 || dy > eps2));
-
-//     if (dx > eps1 || dy > eps2) {
-//         return Result(x1, 1, stepsCnt);
-//     }
-//     return Result(x1, 0, stepsCnt);
-// }
-
-
 std::vector<float> matVecMul(
     std::vector<std::vector<float>> H,
     std::vector<float> g
@@ -88,6 +45,65 @@ float dist(std::vector<float> a, std::vector<float> b) {
 }
 
 
+float norm(std::vector<float> x) {
+    float res = 0.0;
+    for (auto& el : x) {
+        res += el * el;
+    }
+    return res;
+}
+
+
+Result bisection(
+    std::function<std::vector<float>(std::vector<float>)> f, 
+    std::vector<float> x1, std::vector<float> x2, 
+    int maxSteps = 10000, float eps1 = 0.001, float eps2 = 0.001
+    ) {
+    // f = grad(F) if we want to optimize F
+    std::srand(time(NULL));
+    int stepsCnt = 0, skippedSteps = 0;
+
+    float dx = 0.0, dy = 0.0;
+    float maxDx = 0.0, maxDy = 0.0;
+    do {
+        maxDx = 0.0, maxDy = 0.0;
+        skippedSteps = 0;
+        for (int i = 0; i < x1.size(); i++) {
+            if (f(x1)[i] * f(x2)[i] > 0) {
+                skippedSteps++;
+                continue;
+            }
+
+            std::vector<float> mid = x1;
+            mid[i] = (x1[i] + x2[i]) / 2;
+            if (f(x1)[i] * f(mid)[i] < 0) {
+                dx = dist(x2, mid);
+                dy = abs(norm(f(x2)) - norm(f(mid)));
+                x2 = mid;
+            }
+            else {
+                dx = dist(mid, x1);
+                dy = abs(norm(f(x1)) - norm(f(mid)));
+                x1 = mid;
+            }
+            if (dx > maxDx)
+                maxDx = dx;
+            if (dy > maxDy)
+                maxDy = dy;
+        }
+        if (skippedSteps == x1.size()) {
+            return Result(x1, 2, stepsCnt);
+        }
+        stepsCnt++;
+    } while (stepsCnt < maxSteps && (maxDx > eps1 || maxDy > eps2));
+
+    if (maxDx > eps1 || maxDy > eps2) {
+        return Result(x1, 1, stepsCnt);
+    }
+    return Result(x1, 0, stepsCnt);
+}
+
+
 Result newton(
     std::function<float(std::vector<float>)> f, 
     std::function<std::vector<float>(std::vector<float>)> grad, 
@@ -105,13 +121,12 @@ Result newton(
         for (int i = 0; i < x.size(); i++) {
             x1[i] = x[i] - diff[i];
         }
-        dx = dist(x, x1);
+        dx = norm(diff);
         dy = abs(f(x) - f(x1));
         x = x1;
         stepsCnt++;
 
     } while (stepsCnt < maxSteps && (dx > eps1 || dy > eps2));
-    std::cout << dx << " " << dy << std::endl;
     if (dx > eps1 || dy > eps2) {
         return Result(x, 1, stepsCnt);
     }
@@ -122,8 +137,7 @@ Result newton(
 float rastrigin(std::vector<float> x) {
     float res = 10.0 * (float)x.size();
     for (auto& el : x) {
-        res += el * el;
-        res -= 10 * cos(2 * M_PI * el);
+        res += el * el - 10 * cos(2 * M_PI * el);
     }
     return res;
 }
@@ -146,16 +160,23 @@ std::vector<std::vector<float>> rastriginInvGessian(std::vector<float> x) {
 
 
 int main() {
-    std::map<int, std::string> mapa = { {0, "SUCCESS"}, {1, "ITER LIMIT EXCEEDED"}, {2, "INIT FAILURE"} };
+    std::map<int, std::string> mapa = { {0, "SUCCESS"}, {1, "STEPS LIMIT EXCEEDED"}, {2, "ENDLESS LOOP"} };
 
     std::cout << "Rastrigin's function" << std::endl;
-    // auto res1 = bisection(fooDer);
-    // std::cout << "Bisection: " << mapa[res1.code] << " " << res1.res << "; n_steps = " << res1.steps << std::endl;
-    auto res1 = newton(rastrigin, rastriginGrad, rastriginInvGessian, { 4.0, 4.0 }, 10000, 0.0000001, 0.0000001);
+
+    auto res1 = bisection(rastriginGrad, { -5.5, -5.5 }, { 5.5, 5.5 });
+    std::cout << "Bisection: " << mapa[res1.code] << " (";
+        for (auto& el : res1.res) {
+            std::cout << el << " ";
+        } 
+    std::cout << "); n_steps = " << res1.steps << std::endl;
+
+    res1 = newton(rastrigin, rastriginGrad, rastriginInvGessian, { -5.5, 5.5 });
     std::cout << "Newton: " << mapa[res1.code] << " (";
     for (auto& el : res1.res) {
         std::cout << el << " ";
     } 
     std::cout << "); n_steps = " << res1.steps << std::endl;
+
     return 0;
 }
