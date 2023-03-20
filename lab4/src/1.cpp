@@ -84,4 +84,6 @@ int main() {
     std::cout << "RandomSearch: " << mapa[res.code] << " " << res.res << "; n_f_calls = " << res.steps << std::endl;
     res = lipo(MinusRastrigin, -10.123, 5.234);
     std::cout << "LIPO: " << mapa[res.code] << " " << res.res << "; n_f_calls = " << res.steps << std::endl;
+
+    return 0;
 }
