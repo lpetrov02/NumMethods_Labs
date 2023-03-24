@@ -20,6 +20,11 @@ float abs(float a) {
 }
 
 
+float sign(float a) {
+    return a >= 0.0 ? 1.0 : -1.0;
+}
+
+
 std::vector<float> matVecMul(
     std::vector<std::vector<float>> H,
     std::vector<float> g
@@ -151,9 +156,11 @@ std::vector<float> rastriginGrad(std::vector<float> x) {
 }
 
 std::vector<std::vector<float>> rastriginInvGessian(std::vector<float> x) {
+    float eps = 0.001, denom = 0.0;
     std::vector<std::vector<float>> res(x.size(), std::vector<float>(x.size(), 0.0));
     for (int i = 0; i < x.size(); i++) {
-        res[i][i] = 1.0 / (2.0 + 40.0 * M_PI * M_PI * cos(2.0 * M_PI * x[i]));
+        denom = 2.0 + 40.0 * M_PI * M_PI * cos(2.0 * M_PI * x[i]);
+        res[i][i] = 1.0 / std::max(abs(denom), eps) * sign(denom);
     }
     return res;
 }

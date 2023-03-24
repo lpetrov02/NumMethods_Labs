@@ -20,6 +20,11 @@ float abs(float a) {
 }
 
 
+float sign(float a) {
+    return a >= 0 ? 1.0 : -1.0;
+}
+
+
 Result bisection(std::function<float(float)> f, int maxSteps = 10000, float eps1 = 0.001, float eps2 = 0.001) {
     // f = F' if we want to optimize F
     std::srand(time(NULL));
@@ -67,10 +72,10 @@ Result newton(std::function<float(float)> f, std::function<float(float)> der1, s
     std::srand(time(NULL));
     int stepsCnt = 0;
 
-    float dx = 0.0, dy = 0.0;
+    float dx = 0.0, dy = 0.0, eps = 0.001;
     stepsCnt = 0;
     do {
-        float x1 = x - der1(x) / der2(x);
+        float x1 = x - der1(x) / sign(der2(x)) / std::max(abs(der2(x)), eps);
         dx = abs(x - x1);
         dy = abs(f(x) - f(x1));
         x = x1;
@@ -119,6 +124,7 @@ int main() {
     res1 = newton(foo, fooDer, fooDer2, 5.0);
     std::cout << "Newton: " << mapa[res1.code] << " " << res1.res << "; n_steps = " << res1.steps << std::endl;
 
+    std::cout << "Parabola 5x^2 - 4x + 3 function" << std::endl;
     auto res2 = bisection(parabolaDer);
     std::cout << "Bisection: " << mapa[res2.code] << " " << res2.res << "; n_steps = " << res2.steps << std::endl;
     res2 = newton(parabola, parabolaDer, parabolaDer2);
